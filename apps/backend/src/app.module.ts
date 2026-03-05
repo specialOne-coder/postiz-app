@@ -17,6 +17,7 @@ import { TemporalRegisterMissingSearchAttributesModule } from '@gitroom/nestjs-l
 import { InfiniteWorkflowRegisterModule } from '@gitroom/nestjs-libraries/temporal/infinite.workflow.register';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import { ioRedis } from '@gitroom/nestjs-libraries/redis/redis.service';
+import { ViralsPublicModule } from '@gitroom/backend/api/routes/virals/virals.public.module';
 
 @Global()
 @Module({
@@ -25,6 +26,7 @@ import { ioRedis } from '@gitroom/nestjs-libraries/redis/redis.service';
     DatabaseModule,
     ApiModule,
     PublicApiModule,
+    ViralsPublicModule,
     AgentModule,
     ThirdPartyModule,
     VideoModule,
