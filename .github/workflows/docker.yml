@@ -21,5 +21,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
+          file: ./Dockerfile.dev
           push: true
           tags: ghcr.io/specialone-coder/postiz-app:latest
