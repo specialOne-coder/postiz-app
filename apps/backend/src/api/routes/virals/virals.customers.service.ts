@@ -134,7 +134,8 @@ export class ViralsCustomersService {
     customerId: string,
     provider: string,
     refresh?: string,
-    externalUrl?: string
+    externalUrl?: string,
+    redirectUrl?: string
   ) {
     const customerOrg = await this._loadCustomerOrg(masterOrg.id, customerId);
 
@@ -169,6 +170,10 @@ export class ViralsCustomersService {
 
       await ioRedis.set(`organization:${state}`, customerOrg.id, 'EX', 3600);
       await ioRedis.set(`login:${state}`, codeVerifier, 'EX', 3600);
+
+      if (redirectUrl) {
+        await ioRedis.set(`redirect:${state}`, redirectUrl, 'EX', 3600);
+      }
 
       if (getExternalUrl) {
         await ioRedis.set(

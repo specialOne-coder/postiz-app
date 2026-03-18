@@ -26,15 +26,16 @@ export class ViralsCustomersController {
     @Param('customerId') customerId: string,
     @Param('provider') provider: string,
     @Query('refresh') refresh?: string,
-    @Query('externalUrl') externalUrl?: string
+    @Query('externalUrl') externalUrl?: string,
+    @Query('redirectUrl') redirectUrl?: string
   ) {
-    Sentry.metrics.count('public_api-request', 1);
     return this._viralsCustomersService.generateOAuthUrl(
       org,
       customerId,
       provider,
       refresh,
-      externalUrl
+      externalUrl,
+      redirectUrl
     );
   }
 

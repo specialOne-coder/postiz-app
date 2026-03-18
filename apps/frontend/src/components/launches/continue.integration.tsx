@@ -94,6 +94,27 @@ export const ContinueIntegration: FC<{
   }, []);
 
   useEffect(() => {
+    // Handle OAuth cancel or error from TikTok
+    if (searchParams.error && searchParams.state) {
+      const fetchRedirectAndLeave = async () => {
+        try {
+          const res = await fetch(
+            `/api/public/v1/redirect-url?state=${encodeURIComponent(searchParams.state)}`
+          );
+          if (res.ok) {
+            const { redirectUrl } = await res.json();
+            if (redirectUrl) {
+              push(`${redirectUrl}&tiktok_error=${encodeURIComponent(searchParams.error)}`);
+              return;
+            }
+          }
+        } catch {}
+        setError(true);
+      };
+      fetchRedirectAndLeave();
+      return;
+    }
+
     (async () => {
       const timezone = String(dayjs.tz().utcOffset());
 
