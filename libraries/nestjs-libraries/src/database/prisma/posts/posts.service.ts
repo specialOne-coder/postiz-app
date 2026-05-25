@@ -65,6 +65,96 @@ export class PostsService {
     return this._postRepository.updatePost(id, postId, releaseURL);
   }
 
+  async savePublishId(postId: string, publishId: string) {
+    return this._postRepository.savePublishId(postId, publishId);
+  }
+
+  getPostById(postId: string, orgId: string) {
+    return this._postRepository.getPostById(postId, orgId);
+  }
+
+  /**
+   * Resolve a TikTok publish_id to a video_id.
+   * Used by the Virals public API to get the exact TikTok video_id
+   * for a post that was published via the UPLOAD flow.
+   */
+  async resolvePublishStatus(
+    orgId: string,
+    postId: string
+  ): Promise<
+    | { status: 'published'; videoId: string }
+    | { status: 'not_published' }
+    | { status: 'failed' }
+    | { status: 'not_found' }
+    | { status: 'no_publish_id' }
+    | { status: 'no_integration' }
+    | { status: 'not_tiktok' }
+    | { status: 'no_access_token' }
+  > {
+    const post = await this._postRepository.getPostById(postId, orgId);
+    if (!post) {
+      return { status: 'not_found' };
+    }
+
+    // If the post already has a resolved releaseId, return it directly
+    if (post.releaseId && post.releaseId !== 'missing') {
+      return { status: 'published', videoId: post.releaseId };
+    }
+
+    // Extract TikTok publish_id from settings JSON
+    let publishId: string | undefined;
+    try {
+      const settings = post.settings ? JSON.parse(post.settings) : {};
+      publishId = settings.tiktokPublishId;
+    } catch {
+      // settings not valid JSON
+    }
+
+    if (!publishId) {
+      return { status: 'no_publish_id' };
+    }
+
+    // Get the integration (TikTok account)
+    const integration = post.integration;
+    if (!integration) {
+      return { status: 'no_integration' };
+    }
+
+    if (integration.providerIdentifier !== 'tiktok') {
+      return { status: 'not_tiktok' };
+    }
+
+    // Handle token refresh if needed
+    let accessToken = integration.token;
+    if (dayjs(integration.tokenExpiration).isBefore(dayjs())) {
+      const data = await this._refreshIntegrationService.refresh(integration);
+      if (!data || !data.accessToken) {
+        await this._integrationService.disconnectChannel(orgId, integration);
+        return { status: 'no_access_token' };
+      }
+      accessToken = data.accessToken;
+    }
+
+    // Resolve via TikTok API
+    const provider = this._integrationManager.getSocialIntegration('tiktok');
+    if (!provider || typeof (provider as any).resolvePublishId !== 'function') {
+      return { status: 'not_tiktok' };
+    }
+
+    const result = await (provider as any).resolvePublishId(publishId, accessToken);
+
+    // If published, update the releaseId
+    if (result.status === 'published' && result.videoId) {
+      try {
+        await this._postRepository.updateReleaseId(postId, orgId, result.videoId);
+      } catch {
+        // Best effort — the video_id is still returned
+      }
+    }
+
+    return result;
+  }
+
   async getMissingContent(
     orgId: string,
     postId: string,

@@ -3,8 +3,12 @@ import { ViralsCustomersController } from '@gitroom/backend/api/routes/virals/vi
 import { PublicAuthMiddleware } from '@gitroom/backend/services/auth/public.auth.middleware';
 import { ViralsCustomersService } from '@gitroom/backend/api/routes/virals/virals.customers.service';
 import { ViralsRedirectController } from '@gitroom/backend/api/routes/virals/virals.redirect.controller';
+import { ViralsPublishStatusController } from '@gitroom/backend/api/routes/virals/virals.publish-status.controller';
 
-const authenticatedControllers = [ViralsCustomersController];
+const authenticatedControllers = [
+  ViralsCustomersController,
+  ViralsPublishStatusController,
+];
 
 @Module({
   controllers: [...authenticatedControllers, ViralsRedirectController],

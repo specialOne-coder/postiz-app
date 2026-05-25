@@ -425,7 +425,7 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
               publicaly_available_post_id,
           id: !publicaly_available_post_id
             ? publishId
-            : publicaly_available_post_id?.[0],
+            : String(publicaly_available_post_id),
         };
       }
 
@@ -440,6 +440,65 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
       }
 
       await timer(10000);
+    }
+  }
+
+  /**
+   * Resolve a TikTok publish_id to a video_id.
+   * Returns { status: 'published', videoId } or { status: 'not_published' }.
+   * Used by the public API to let Virals resolve exact video_ids without
+   * relying on the /missing endpoint's guess-based matching.
+   */
+  async resolvePublishId(
+    publishId: string,
+    accessToken: string
+  ): Promise<{ status: 'published'; videoId: string } | { status: 'not_published' } | { status: 'failed' }> {
+    try {
+      const response = await this.fetch(
+        'https://open.tiktokapis.com/v2/post/publish/status/fetch/',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json; charset=UTF-8',
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            publish_id: publishId,
+          }),
+        },
+        '',
+        0,
+        true
+      );
+      const data = await response.json();
+      const { status, publicaly_available_post_id } = data.data;
+
+      // Note: publicaly_available_post_id is a string (despite the name suggesting array)
+      // The existing code uses ?.[0] which incorrectly takes the first character.
+      // We use String() to ensure we get the full video ID.
+      const videoId = publicaly_available_post_id
+        ? String(publicaly_available_post_id)
+        : undefined;
+
+      if (status === 'PUBLISH_COMPLETE' && videoId) {
+        return {
+          status: 'published',
+          videoId,
+        };
+      }
+
+      if (status === 'SEND_TO_USER_INBOX') {
+        return { status: 'not_published' };
+      }
+
+      if (status === 'FAILED') {
+        return { status: 'failed' };
+      }
+
+      // Unknown status — treat as not published yet
+      return { status: 'not_published' };
+    } catch {
+      return { status: 'not_published' };
     }
   }
 
@@ -585,6 +644,7 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
         releaseURL: url,
         postId: String(videoId),
         status: 'success',
+        publishId: publish_id,
       },
     ];
   }

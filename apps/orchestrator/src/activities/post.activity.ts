@@ -84,6 +84,11 @@ export class PostActivity {
   }
 
   @ActivityMethod()
+  async savePublishId(postId: string, publishId: string) {
+    return this._postService.savePublishId(postId, publishId);
+  }
+
+  @ActivityMethod()
   async getPostsList(orgId: string, postId: string) {
     const subscription = await this._subscriptionService.getSubscription(orgId);
     if (!subscription) {
