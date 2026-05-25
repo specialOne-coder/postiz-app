@@ -104,6 +104,7 @@ export type PostResponse = {
   postId: string; // The ID of the scheduled post returned by the platform
   releaseURL: string; // The URL of the post on the platform
   status: string; // Status of the operation or initial post status
+  publishId?: string; // The TikTok publish_id for resolving video_id later (UPLOAD flow)
 };
 
 export type PostDetails<T = any> = {

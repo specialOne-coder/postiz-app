@@ -369,6 +369,19 @@ export class PostsRepository {
     });
   }
 
+  async savePublishId(postId: string, publishId: string) {
+    const post = await this._post.model.post.findUnique({
+      where: { id: postId },
+      select: { settings: true },
+    });
+    const settings = post?.settings ? JSON.parse(post.settings) : {};
+    settings.tiktokPublishId = publishId;
+    return this._post.model.post.update({
+      where: { id: postId },
+      data: { settings: JSON.stringify(settings) },
+    });
+  }
+
   updateReleaseId(id: string, orgId: string, releaseId: string) {
     return this._post.model.post.update({
       where: {

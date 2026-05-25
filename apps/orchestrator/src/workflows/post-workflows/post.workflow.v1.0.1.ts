@@ -33,6 +33,7 @@ const {
   inAppNotification,
   changeState,
   updatePost,
+  savePublishId,
   sendWebhooks,
   isCommentable,
 } = proxyActivities<PostActivity>({
@@ -170,6 +171,15 @@ export async function postWorkflowV101({
           postsResults[i].postId,
           postsResults[i].releaseURL
         );
+
+        // Store TikTok publish_id in settings for later video_id resolution
+        if (postsResults[i].publishId) {
+          try {
+            await savePublishId(postsList[i].id, postsResults[i].publishId);
+          } catch {
+            // Non-critical: best effort to save publish_id
+          }
+        }
 
         if (i === 0) {
           // send notification on a sucessful post

@@ -93,6 +93,8 @@ export class FarcasterProvider
         embeds:
           firstPost?.media?.map((media) => ({
             url: media.path,
+            cast_id: undefined,
+            castId: undefined,
           })) || [],
         signerUuid: accessToken,
         text: firstPost.message,
@@ -135,6 +137,8 @@ export class FarcasterProvider
         embeds:
           commentPost?.media?.map((media) => ({
             url: media.path,
+            cast_id: undefined,
+            castId: undefined,
           })) || [],
         signerUuid: accessToken,
         text: commentPost.message,
