@@ -15,6 +15,22 @@ import { timer } from '@gitroom/helpers/utils/timer';
 import { Integration } from '@prisma/client';
 import { Rules } from '@gitroom/nestjs-libraries/chat/rules.description.decorator';
 
+/**
+ * Parse JSON from a TikTok API response, preserving large integers as strings.
+ * TikTok video IDs exceed Number.MAX_SAFE_INTEGER (2^53), so JSON.parse() loses
+ * precision. This function extracts `publicaly_available_post_id` as a string before
+ * parsing the rest normally.
+ */
+async function parseTikTokJson(response: Response): Promise<any> {
+  const text = await response.text();
+  // Replace unquoted large integers (16+ digits) with quoted strings to survive JSON.parse
+  const safeText = text.replace(
+    /("publicaly_available_post_id"\s*:\s*)(\d{16,})/g,
+    (_, prefix, numStr) => prefix + '"' + numStr + '"'
+  );
+  return JSON.parse(safeText);
+}
+
 @Rules(
   'TikTok can have one video or one picture or multiple pictures, it cannot be without an attachment'
 )
@@ -389,8 +405,7 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
   ): Promise<{ url: string; id: string }> {
     // eslint-disable-next-line no-constant-condition
     while (true) {
-      const post = await (
-        await this.fetch(
+      const resp = await this.fetch(
           'https://open.tiktokapis.com/v2/post/publish/status/fetch/',
           {
             method: 'POST',
@@ -405,8 +420,8 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
           '',
           0,
           true
-        )
-      ).json();
+        );
+      const post = await parseTikTokJson(resp);
 
       const { status, publicaly_available_post_id } = post.data;
 
@@ -425,7 +440,7 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
               publicaly_available_post_id,
           id: !publicaly_available_post_id
             ? publishId
-            : String(publicaly_available_post_id),
+            : publicaly_available_post_id,
         };
       }
 
@@ -470,14 +485,14 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
         0,
         true
       );
-      const data = await response.json();
+      const data = await parseTikTokJson(response);
       const { status, publicaly_available_post_id } = data.data;
 
-      // Note: publicaly_available_post_id is a string (despite the name suggesting array)
-      // The existing code uses ?.[0] which incorrectly takes the first character.
-      // We use String() to ensure we get the full video ID.
+      // Note: publicaly_available_post_id is now correctly preserved as a string
+      // by parseTikTokJson (which quotes large integers before JSON.parse to avoid
+      // float64 precision loss for IDs > 2^53).
       const videoId = publicaly_available_post_id
-        ? String(publicaly_available_post_id)
+        ? publicaly_available_post_id
         : undefined;
 
       if (status === 'PUBLISH_COMPLETE' && videoId) {
@@ -833,8 +848,7 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
     const today = dayjs().format('YYYY-MM-DD');
 
     if (postId.indexOf('v_pub_url') > -1) {
-      const post = await (
-        await this.fetch(
+      const resp = await this.fetch(
           'https://open.tiktokapis.com/v2/post/publish/status/fetch/',
           {
             method: 'POST',
@@ -849,14 +863,14 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
           '',
           0,
           true
-        )
-      ).json();
+        );
+      const post = await parseTikTokJson(resp);
 
-      if (!post?.data?.publicaly_available_post_id?.[0]) {
+      if (!post?.data?.publicaly_available_post_id) {
         return [];
       }
 
-      postId = post.data.publicaly_available_post_id[0];
+      postId = post.data.publicaly_available_post_id;
     }
 
     try {
