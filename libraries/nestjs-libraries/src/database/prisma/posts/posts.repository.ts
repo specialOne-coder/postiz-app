@@ -382,13 +382,11 @@ export class PostsRepository {
     });
   }
 
-  updateReleaseId(id: string, orgId: string, releaseId: string) {
+  updateReleaseId(id: string, orgId: string, releaseId: string, force?: boolean) {
     return this._post.model.post.update({
-      where: {
-        id,
-        organizationId: orgId,
-        releaseId: 'missing',
-      },
+      where: force
+        ? { id, organizationId: orgId }
+        : { id, organizationId: orgId, releaseId: 'missing' },
       data: {
         releaseId: String(releaseId),
       },

@@ -345,10 +345,11 @@ export class PublicIntegrationsController {
   async updateReleaseId(
     @GetOrgFromRequest() org: Organization,
     @Param('id') id: string,
-    @Body('releaseId') releaseId: string
+    @Body('releaseId') releaseId: string,
+    @Body('force') force?: boolean
   ) {
     Sentry.metrics.count('public_api-request', 1);
-    return this._postsService.updateReleaseId(org.id, id, releaseId);
+    return this._postsService.updateReleaseId(org.id, id, releaseId, force);
   }
 
   @Get('/analytics/:integration')

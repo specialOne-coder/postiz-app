@@ -215,8 +215,8 @@ export class PostsService {
     return [];
   }
 
-  async updateReleaseId(orgId: string, postId: string, releaseId: string) {
-    return this._postRepository.updateReleaseId(postId, orgId, releaseId);
+  async updateReleaseId(orgId: string, postId: string, releaseId: string, force?: boolean) {
+    return this._postRepository.updateReleaseId(postId, orgId, releaseId, force);
   }
 
   async checkPostAnalytics(
