@@ -35,15 +35,28 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-      - name: Setup pnpm cache
+      # Cache the pnpm store keyed only on the lockfile — source-file changes are
+      # irrelevant to dependency resolution and would just invalidate the cache.
+      # The earlier glob (**/*.js,**/*.jsx,**/*.ts,**/*.tsx) walked node_modules
+      # and timed out hashFiles().
+      - name: Setup pnpm store cache
         uses: actions/cache@v4
         with:
-          path: |
-            ${{ env.STORE_PATH }}
-            ${{ github.workspace }}/.next/cache
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('**/*.js', '**/*.jsx', '**/*.ts', '**/*.tsx') }}
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            ${{ runner.os }}-pnpm-store-
+
+      # Separate cache for Next.js incremental build output. Next.js validates
+      # its own cache against source via internal hashing, so we only need the
+      # lockfile as a coarse invalidation key here.
+      - name: Setup Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
 
       - name: Install dependencies
         run: pnpm install
