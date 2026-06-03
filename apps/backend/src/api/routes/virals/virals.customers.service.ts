@@ -200,6 +200,11 @@ export class ViralsCustomersService {
       integrations: integrations.map((integration) => ({
         id: integration.id,
         platform: integration.providerIdentifier,
+        // The provider-side account id (e.g. TikTok user_id). Stable across
+        // re-connects and across Postiz customer orgs — the canonical identity
+        // Virals uses to prevent the same social account being connected to
+        // multiple products.
+        internalId: integration.internalId,
         name: integration.name,
         picture: integration.picture,
         connected:
