@@ -205,7 +205,11 @@ export class ViralsCustomersService {
         // Virals uses to prevent the same social account being connected to
         // multiple products.
         internalId: integration.internalId,
+        // name = display name (free-form). profile = username/handle. Different
+        // fields with different semantics — display name and username can diverge.
+        // Virals should prefer profile when showing the user "which account is connected".
         name: integration.name,
+        profile: integration.profile,
         picture: integration.picture,
         connected:
           !integration.disabled &&
